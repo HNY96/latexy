@@ -1,0 +1,85 @@
+\section{INTRODUCTION}
+
+Ethereum is an attractive cryptocurrency different with the traditional ones, like Bitcoin. Ethereum can not only store the transactions' information on the chain, but also can store some extra data, called \textit{smart contract}, which can be interacted by users. This bold and innovative attempt has been proved by the market as a huge success, which lead to an explosion of cryptocurrency supporting smart contract or its variant, like EOS, Ripple, TRON, etc. Since 2015, a large amount of capital inflow and high frequency trading in Ethereum attracted more and more attention of investors and public. According to the \textit{CoinMarketCap}, due to the 26th Feb, 2019, Ethereum's market cap is around $14.5B only smaller than Bitcoin.
+
+Transaction is signed packet that contains special data. There are 2 types of transaction, \textit{external transaction} and \textit{internal transaction}. Within external transaction, users are able to exchange, recharge, redeem ETH, even deploy or interact with smart contracts. It is nearly free to deploy a smart contract, which takes only several cents of US Dollar. Smart contracts call each other via internal transaction. This kind of interaction between smart contracts can lead to a more sophisticated call relationship composed of several contracts. Because of the scalability and ease of use of smart contract, numerous developers and financial employees show huge interest to it. They are capable of deploying smart contract easily and then treating it as a normal contract. The difference between these two kinds is smart contract stored on the block chain. Additionally, several related smart contracts could be treated as a complicated \textit{decentralized application} like \textit{Fomo3D}, \textit{CryptoKitties}, etc.
+
+The native token of Ethereum is called ETH. Apart from this, users in Ethereum are able to issue their own tokens, a set of specific interfaces, ERC-20, is mandatory to be implemented. After creation and issue, your own token could be exchanged, transferred and traded. Therefore, to distinguish between users' generated tokens, each of them has to have its own name and symbol, made of several, usually three, capital letters.
+
+Although there are lots of studies with respect to Ethereum, like the ecosystem of Ethereum, the security of Ethereum Virtual Machine(EVM), vulnerabilities of smart contract and their trigger condition, a bunch of problems still remained. How to prevent the plagiarism or even copy and paste of one's code as all the byte code or source code of smart contracts is available on \textit{Etherscan.io}? How to detect and prohibit vulnerabilities spread via the above behaviors? What is the ecosystem of Ethereum from the perspective of diversity of smart contracts? Is there a situation of buying wrong tokens because of the high possibility of collision between two totally irrelevant tokens' symbol unexpectedly or intentionally and wrong handling of some exchange?
+
+To answer these questions and more, we collected and analyzed millions of smart contract on Ethereum. Using Context Triggered Piecewise Hash (CTPH), a kind of fuzzy hash, we could easily and quickly quantify the similarity between any two smart contracts which are different in both content and length. Besides, to scan the vulnerabilities of smart contracts, we developed our own scanner based on \textit{Mythril}, a security analysis tool using symbolic analysis. For a higher accuracy and a wider covering of kinds of vulnerabilities, we nearly rewrite the detection logic of existed modules and create some new ones. With these collected data and scan results, we can answer these following questions:
+
+
+1. \textit{What about the ecosystem of the Ethereum?} With the higher and higher valuation of the cryptocurrency, especially Ethereum, more and more people become interest in developing their own smart contracts or issuing their own tokens which is followed the rules of ERC-20. Moreover, according to our collected data and analyzed result, only 100 thousand smart contracts are distinct among nearly 9 millions. In other words, only $1.11\%$ are written by developers theirselves, and the rest of them are copy and paste or just changed several arguments from that tiny part of Ethereum's smart contract. What's more, we cluster these distinct smart contracts and find some interesting results.
+
+2. \textit{Are the smart contracts secure enough?} As the smart contracts are often related to the currency transfer, we are very concerned about several vulnerabilities, may lead to critical impacts, including overflow, incomplete ERC-20 interface, wrong implementation of ERC-20, reentrancy, etc. According to the scanning result, the data shows some astonishing result. In addition, we combine cluster result and vulnerability scan result, to see if similar contracts would result in vulnerabilities spreading out.
+
+
+\section{BACKGROUND}
+
+From our collected data, fig 1, as we could see, since 2015, every day has a large number of smart contract created. We are able to see some typical event leading to the explosive creation of smart contract, like CryptoKitties in Dec 2017, Fomo3D in July 2018. Except for normal smart transaction's created by users, especially since July 2018, lots of internal transaction created a batch of smart contract, aiming at a gamble game, Last Winner, in this game more contracts means higher possibility to collect airdrop, a reward system but being maliciously used. This kind of contract, created by other contracts, has little positive influence for Ethereum's ecosystem. Even worse, creation and execution of these useless contracts, for majority users in Ethereum, will result in Ethereum's congestion or even a DDoS attack.
+
+![](graph1.png "Smart Contract Creation per Day")
+
+
+As we mentioned above, decentralized applications emerged in large numbers, most of them are associated with gambling. The currency inflow stimulates attackers' attack desire. Apart from this, \textit{Solidity}, a totally new language implemented by Ethereum's team, is not mature enough to improve performance in security. Various types of vulnerability appeared and are exploited by attackers, according to the table 1, attackers grab profits from them.
+
+\textit{the following information should be inserted into a table as the following head: time, event name, loss amount, description. And these attacks all target to smart contract not the Ethereum itself}
+
+
+
+
+\section{METHODOLOGY}
+
+Now, we'd love to provide some information about how do we extract useful information from our collected data. And we will split this section to three parts: contracts' similarity, contract's vulnerabilities and symbol problem of ERC-20.
+
+\subsection{How to Calculate Similarity}
+
+As we mentioned previously, Ethereum's smart contract is written by \textit{Solidity}, a language is only used for Ethereum's smart contract. A solidity file has to be compiled by \textit{solc (Solidity compiler)} transferring this human readable file to bytecode and doing some optimization to accelerate running speed and minimize storage space and gas consumption, which will be charged from contract deployer and offered to miners to prevent DDoS attack and give incentive to miners.
+
+A typical contract's bytecode is composed of three parts: \textit{creation code}, \textit{runtime code} and \textit{swarm code}, as we could see in fig 2.
+
+![](fig2.png)
+
+Creation code is a single-use code fragment, only used by EVM once during the transaction that deploys this contract. A typical creation code part is ended with operation sequence: \textit{PUSH 0x00, RETURN, STOP}, \textit{0x6000f300} in bytecode, as we could see in fig 2. Runtime code is the most important part, which includes function dispatchers, functions' body, exception handling module and so on. EVM will run the contract according to the operations supplied by runtime code part. Swarm code is not a runnable code, it is the hash calculated by solc from contract's metadata. It can be used in \textit{Swarm}, a decentralized storage system, to query metadata and prove the consistency between the contract you see and the fact contract. Therefore, even if the creation code and runtime code is exactly same, when they are deployed on the blockchain, the metadata would be different because of a wide variety of factors, which results in the difference of swarm code part between these two smart contracts. Like the end of creation code, swarm code part always starts with \textit{0xa165627a7a72305820}, which is able to be decoded to "bzzr", and ends with \textit{0x0029}, means the hash part's length is 41 bytes long. According to these two mark, we are capable of identifying the swarm part quickly and correctly.
+
+Our goal is to calculate similarity between any two contracts from Ethereum, due to the scale of dataset, we need to preprocess the dataset we collected. As previously mentioned, swarm code not affects or be affected by the content in smart contract. Thus the first step is remove the swarm code part. Additionally, thinking about the context of plagiarism in Ethereum, just changing symbols or some variables' value could be deployed as a whole new contract. Fortunately, EVM is a simple stack based module, implying that all the values of variables is pushed onto top of the stack. Accordingly, to detect this behavior, we removed all the operand after operation, \textit{PUSH}. After these two steps, we use a simple \textit{set} to remove duplication in dataset and minimize it. The dataset's size could be seen at table 2.
+
+For now, the contract's number is around 100 thousand, smaller than the previous far away. However, calculate any two contracts' similarity using editing distance is still a tough problem because of the following two reasons: just a bit's difference will lead to a entirely different result if we use traditional hash method; if we use editing distance as usual, the time and memory consumed are intolerable. Therefore, I use \textit{CTPH}, Context Triggered Piecewise Hash, an algorithm which is originally used as a spam email detector. CTPH combines traditional hash, like MD5 or FNV, to generate piecewise hash and rolling hash that can produce hash where the input is hashed in a window that moves through the input. There is an instance using rolling hash to detect repackaged smartphone applications by Wu Zhou et al. which indicates the rolling hash's reliability. In this way, CTPH is able to compress contract's code and generate a fingerprint referring to a specific contract as we show in fig 3.
+
+![it is the CTPH result of helloworld.sol](fig3.png)
+
+The fingerprint is divided into 3 parts by colon as: window block size $b$, hash result with block size $b$ and result with block size $2b$. The reason of displaying window size is that only signatures with an identical block size can be compared. However, the window block size varies among all these contracts, which means the compress procession is meaningless because we cannot compare arbitrary two contracts with different window block size. To deal with it, CTPH triggers two hash results from block size $b$ and $2b$. For example, there are two contracts, the first with a block size $b_x$ and the second with a block size $b_y$, the first one generate signature with $b_x$ and $2b_x$ and the second one with $b_y$ and $2b_y$. $b_x = b_y$, $b_x = 2b_y$, $2b_x = b_y$, any of these three condition is met, these two contracts could be compared. In this manner, even two contracts are similar but are significantly different in length, leading to a different window block size, are possible to be compared and generate score by weighted edit distance, a special edit distance raised by  performing well especially in this area. Based on the similarity score as the extent of how are they similar to each other, we could cluster all these distinct smart contracts.
+
+\subsection{How to Scan Vulnerabilities}
+
+Our scanner is based on Mythril, which uses symbolic analysis, an open-source security analysis tool for Ethereum smart contract. We forked it from a very early stage and discovered its high false positive rate on some specific types of vulnerability. In addition, not all types of vulnerabilities we mentioned in table 1, may lead to economic loss, are covered by Mythril. Therefore, we decided to rewrite and create some new modules but still use its virtual machine, simulating the EVM by constructing a virtual stack and performing operations to operands according to opcodes translated from bytecode.
+
+Our scan step could be divided into following steps, as shown in fig 4:
+
+![](fig4.png)
+
+1. Because all smart contracts we collected have bytecode and only part of them have source code. Thus we use Mythril's decompiler to translate bytecode, only runtime code part, into assembly language, created by Solidity's team. 
+
+2. According to the Ethereum's documentation, \textit{0x56} and \textit{0x57} refer to the operation \textit{JUMP} and \textit{JUMPI}. In Solidity, nearly each logic section could be identified by a jump ending. Therefore, using these two operations as dividers are capable of generating several code blocks.
+
+3. Regarding the \textit{JUMP}'s destination as code blocks tag, arrange these blocks with tag by the control flow and destination of jump operation.
+
+4. In scan modules, we localize certain block by vulnerabilities' specific patterns.
+
+5. Traverse or backtrack, according to the detectors logic, the blocks along with the control flow graph which we generated in step 3 till reaching to the leaf node.
+
+6. In step 5, each forking IF would generate at least two paths. Because we treat the localized block in step 4 as the root node and find all its path to leaves, we are able to get several \textit{constrains} representing the path from root to leaf.
+
+7. Solve each constrains generated in step 6.
+
+8. Update the scan result and insert it into dataset.
+
+For instance, because Ethereum's compiler does not have a strong check on overflow situation, \textit{SafeMath}, a common library contract which can prevent losses caused by overflow, plays an important role in Ethereum's ecosystem. However, it doesn't have an official implementation. As a result, lots of developers use their own \textit{SafeMath} which would be wrongly implemented. Therefore, we use regular expression to match a specific sequence which indicates \textit{SafeMath} using. After that, we traverse all paths to leaf from that localized root. If one of the end of paths doesn't have a \textit{Revert} or some operations like that, meaning the constrains generated in step 6 has no solution, we assert this \textit{SafeMath} is wrongly implemented. At last, we store the scan result of each smart contracts of each type of vulnerabilities.
+
+Not like the other's dataset collected from modified Geth or Parity, like paper written by Ting Chen et al., we collect data from \textit{Etherscan.io}, a visualization website which shows nearly every details and metadata of each smart contracts, via website crawler. We construct following tables from data we collected: \textit{eth\_contract}, \textit{eth\_internal\_contracts} and \textit{eth\_distinct\_contracts} etc. The difference between \textit{eth\_contract} and \textit{eth\_internal\_contracts} is the creator's type, if the creator is another contract, the new deployed contract will be stored in \textit{eth\_internal\_contract}. The \textit{eth\_distinct\_contracts} is the combination of those two mentioned tables, but firstly removed swarm code part and creation code part and removed duplication at last. Based on these tables and the scan result generated by our scanner, we are able to generate a new table, \textit{eth\_contract\_vulinfos}. These four tables consist of the cornerstone of this paper.
+
+\section{ANALYSIS}
+
+

@@ -34,7 +34,44 @@ def parseArgs():
 
 
 def translate(content, config_dict):
-	pass
+	for type_key, value in config_dict.items():
+		# like *itelic*
+		if type_key == "pair":
+			for pre, after in value.items():
+				# need to be found
+				my_re = re.escape(pre) + r"[\S| ]*?" + re.escape(pre)
+
+				# I have to define here because subPair only take 1 argument
+				def subPair(myobejct, pre=pre, after=after):
+					tmp = myobejct.group(0).replace(pre, '{', 1)
+					tmp = tmp[::-1]
+					tmp = tmp.replace(pre, '}', 1)
+					tmp = tmp[::-1]
+					# add a \ to activate function in latex
+					tmp = "\\" + after + tmp
+					# add escape for _
+					tmp = re.sub(r"_", r"\_", tmp)
+					return tmp
+
+				content = re.sub(my_re, subPair, content)
+				# print(pre, after)
+		elif type_key == "single":
+			for pre, after in value.items():
+				my_re = r"^" + re.escape(pre) + r" [\S| ]*"
+
+				def subSingle(myobejct, pre=pre, after=after):
+					tmp = myobejct.group(0).replace(pre, '')
+					# because there may have a space between # and text
+					tmp = tmp.strip()
+					tmp = "\\" + after + "{" + tmp + "}"
+					return tmp
+
+				content = re.sub(my_re, subSingle, content, flags=re.MULTILINE)
+
+		# some other change because of bug of Ulysses
+		content = content.replace('’', '\'')
+
+	return content
 
 
 def main():

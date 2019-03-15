@@ -1,9 +1,3 @@
-## My Paper
-
-### ABSTRACT
-
-TODO
-
 ### INTRODUCTION
 
 Ethereum is an attractive cryptocurrency different with the traditional ones, like Bitcoin. Ethereum can not only store the transactions' information on the chain, but also can store some extra data, called *smart contract*, which can be interacted by users. This bold and innovative attempt has been proved by the market as a huge success, which lead to an explosion of cryptocurrency supporting smart contract or its variant, like EOS, Ripple, TRON, etc. Since 2015, a large amount of capital inflow and high frequency trading in Ethereum attracted more and more attention of investors and public. According to the *CoinMarketCap*, due to the 26th Feb, 2019, Ethereum's market cap is around $14.5B only smaller than Bitcoin.
@@ -18,12 +12,13 @@ To answer these questions and more, we collected and analyzed millions of smart 
 
 
 1. *What about the ecosystem of the Ethereum?* With the higher and higher valuation of the cryptocurrency, especially Ethereum, more and more people become interest in developing their own smart contracts or issuing their own tokens which is followed the rules of ERC-20. Moreover, according to our collected data and analyzed result, only 100 thousand smart contracts are distinct among nearly 9 millions. In other words, only $1.11\%$ are written by developers theirselves, and the rest of them are copy and paste or just changed several arguments from that tiny part of Ethereum’s smart contract. What's more, we cluster these distinct smart contracts and find some interesting results.
+
 2. *Are the smart contracts secure enough?* As the smart contracts are often related to the currency transfer, we are very concerned about several vulnerabilities, may lead to critical impacts, including overflow, incomplete ERC-20 interface, wrong implementation of ERC-20, reentrancy, etc. According to the scanning result, the data shows some astonishing result. In addition, we combine cluster result and vulnerability scan result, to see if similar contracts would result in vulnerabilities spreading out.
 
 
 ### BACKGROUND
 
-From our collected data, fig 1, as we could see, since 2015, every day has a large number of smart contract created. We are able to see some typical event leading to the explosive creation of smart contract, like [CryptoKitties in Dec 2017](https://www.wikiwand.com/en/CryptoKitties), [Fomo3D in July 2018](http://www.digitcoinz.com/making-money/fomo-3d-review/). Except for normal smart transaction’s created by users, especially since July 2018, lots of internal transaction created a batch of smart contract, aiming at a gamble game, Last Winner, in this game more contracts means higher possibility to collect airdrop, a reward system but being maliciously used. This kind of contract, created by other contracts, has little positive influence for Ethereum’s ecosystem. Even worse, creation and execution of these useless contracts, for majority users in Ethereum, will result in Ethereum’s congestion or even a DDoS attack.
+From our collected data, fig 1, as we could see, since 2015, every day has a large number of smart contract created. We are able to see some typical event leading to the explosive creation of smart contract, like CryptoKitties in Dec 2017, Fomo3D in July 2018. Except for normal smart transaction’s created by users, especially since July 2018, lots of internal transaction created a batch of smart contract, aiming at a gamble game, Last Winner, in this game more contracts means higher possibility to collect airdrop, a reward system but being maliciously used. This kind of contract, created by other contracts, has little positive influence for Ethereum’s ecosystem. Even worse, creation and execution of these useless contracts, for majority users in Ethereum, will result in Ethereum’s congestion or even a DDoS attack.
 
 ![](graph1.png "Smart Contract Creation per Day")
 
@@ -31,21 +26,6 @@ From our collected data, fig 1, as we could see, since 2015, every day has a lar
 As we mentioned above, decentralized applications emerged in large numbers, most of them are associated with gambling. The currency inflow stimulates attackers’ attack desire. Apart from this, *Solidity*, a totally new language implemented by Ethereum’s team, is not mature enough to improve performance in security. Various types of vulnerability appeared and are exploited by attackers, according to the table 1, attackers grab profits from them.
 
 *the following information should be inserted into a table as the following head: time, event name, loss amount, description. And these attacks all target to smart contract not the Ethereum itself*
-1. 2016-7-20, DAO fork, 3.6m ETH(more than$60m), recursive call and fallback function calls malicious code
-2. 2018-04-22, BEC be attacked, more than $900m, ERC-20’s BatchOverflow
-3. 2018-04-24, SMT be attacked, more than $140m, ERC-20’s ProxyOverflow
-4. 2018-04-28, , not clear, transferFlaw
-5. 2018-05-03, , not clear, ownerAnyone 
-6. 2018-05-10, , not clear, multiOverflow 
-7. 2018-05-18, , not clear, burnOverflow 
-8. 2018-05-21, , not clear, ceoAnyone (constructor could be called arbitrarily)
-9. 2018-05-23, EDU be attacked, not clear, allowed function not validate the recipient
-10. 2018-06-08, not compatible to ERC-20 standard, not clear, 
-11. 2018-06-22, MORPH be attacked, 430 ETH($200k), Owned contract and its constructor are inconsistent
-12. 2018-07-11, fake deposit, not clear, some exchanges modify account’s balance according to the return value
-13. 2018-08-14, unSafeMath, not clear, not use assert but return false or true may lead to the SafeMath module failure
-14. 2018-08-22, Fomo3D congestion attack, 10,469 ETH($3 m), use high gas value to congest others normal transaction
-15. 2018-10-06, SpankChain be attacked, 165 ETH($30k), reentrency
 
 
 
@@ -81,12 +61,19 @@ Our scan step could be divided into following steps, as shown in fig 4:
 ![](fig4.png)
 
 1. Because all smart contracts we collected have bytecode and only part of them have source code. Thus we use Mythril’s decompiler to translate bytecode, only runtime code part, into assembly language, created by Solidity’s team. 
+
 2. According to the Ethereum’s documentation, *0x56* and *0x57* refer to the operation *JUMP* and *JUMPI*. In Solidity, nearly each logic section could be identified by a jump ending. Therefore, using these two operations as dividers are capable of generating several code blocks.
+
 3. Regarding the *JUMP*’s destination as code blocks tag, arrange these blocks with tag by the control flow and destination of jump operation.
+
 4. In scan modules, we localize certain block by vulnerabilities’ specific patterns.
+
 5. Traverse or backtrack, according to the detectors logic, the blocks along with the control flow graph which we generated in step 3 till reaching to the leaf node.
+
 6. In step 5, each forking IF would generate at least two paths. Because we treat the localized block in step 4 as the root node and find all its path to leaves, we are able to get several *constrains* representing the path from root to leaf.
+
 7. Solve each constrains generated in step 6.
+
 8. Update the scan result and insert it into dataset.
 
 For instance, because Ethereum's compiler does not have a strong check on overflow situation, *SafeMath*, a common library contract which can prevent losses caused by overflow, plays an important role in Ethereum’s ecosystem. However, it doesn't have an official implementation. As a result, lots of developers use their own *SafeMath* which would be wrongly implemented. Therefore, we use regular expression to match a specific sequence which indicates *SafeMath* using. After that, we traverse all paths to leaf from that localized root. If one of the end of paths doesn't have a *Revert* or some operations like that, meaning the constrains generated in step 6 has no solution, we assert this *SafeMath* is wrongly implemented. At last, we store the scan result of each smart contracts of each type of vulnerabilities.
