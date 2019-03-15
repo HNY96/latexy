@@ -33,6 +33,23 @@ def parseArgs():
 	return args.i, args.o, args.c
 
 
+def repalceImage(content):
+	# return img mark used in latex source
+	def func(myobejct):
+		pattern = r"""
+\begin{figure}
+\includegraphics{""" + myobejct.group(2) + r"""}\Description{""" + myobejct.group(4) + r"""}
+\caption{""" + myobejct.group(1) + r"""}
+\end{figure}
+"""
+		return pattern
+
+	my_re = r'!\[([\S| ]*)\]\((\S*)\.(\S*) \"([\S| ]*)\"\)'
+	content = re.sub(my_re, func, content)
+	return content
+	
+
+
 def translate(content, config_dict):
 	for type_key, value in config_dict.items():
 		# like *itelic*
@@ -68,8 +85,11 @@ def translate(content, config_dict):
 
 				content = re.sub(my_re, subSingle, content, flags=re.MULTILINE)
 
-		# some other change because of bug of Ulysses
-		content = content.replace('’', '\'')
+	# replace the image mark
+	content = repalceImage(content)
+
+	# some other change because of bug of Ulysses
+	content = content.replace('’', '\'')
 
 	return content
 

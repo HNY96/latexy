@@ -20,13 +20,12 @@ To answer these questions and more, we collected and analyzed millions of smart 
 
 From our collected data, fig 1, as we could see, since 2015, every day has a large number of smart contract created. We are able to see some typical event leading to the explosive creation of smart contract, like CryptoKitties in Dec 2017, Fomo3D in July 2018. Except for normal smart transaction’s created by users, especially since July 2018, lots of internal transaction created a batch of smart contract, aiming at a gamble game, Last Winner, in this game more contracts means higher possibility to collect airdrop, a reward system but being maliciously used. This kind of contract, created by other contracts, has little positive influence for Ethereum’s ecosystem. Even worse, creation and execution of these useless contracts, for majority users in Ethereum, will result in Ethereum’s congestion or even a DDoS attack.
 
-![](graph1.png "Smart Contract Creation per Day")
+![The amount of smart contract creation per day during Aug. 2015 to Dec. 2018 from users(red line) and other contracts(blue line).](fig1.png "Smart Contract Creation per Day")
 
 
 As we mentioned above, decentralized applications emerged in large numbers, most of them are associated with gambling. The currency inflow stimulates attackers’ attack desire. Apart from this, *Solidity*, a totally new language implemented by Ethereum’s team, is not mature enough to improve performance in security. Various types of vulnerability appeared and are exploited by attackers, according to the table 1, attackers grab profits from them.
 
 *the following information should be inserted into a table as the following head: time, event name, loss amount, description. And these attacks all target to smart contract not the Ethereum itself*
-
 
 
 
@@ -40,7 +39,7 @@ As we mentioned previously, Ethereum's smart contract is written by *Solidity*, 
 
 A typical contract's bytecode is composed of three parts: *creation code*, *runtime code* and *swarm code*, as we could see in fig 2.
 
-![](fig2.png)
+![Take Helloworld.sol as an example, compile it and take apart it into three parts: creation code, runtime code and swarm code.](fig2.png "Bytecode's factor")
 
 Creation code is a single-use code fragment, only used by EVM once during the transaction that deploys this contract. A typical creation code part is ended with operation sequence: *PUSH 0x00, RETURN, STOP*, *0x6000f300* in bytecode, as we could see in fig 2. Runtime code is the most important part, which includes function dispatchers, functions' body, exception handling module and so on. EVM will run the contract according to the operations supplied by runtime code part. Swarm code is not a runnable code, it is the hash calculated by solc from contract's metadata. It can be used in *Swarm*, a decentralized storage system, to query metadata and prove the consistency between the contract you see and the fact contract. Therefore, even if the creation code and runtime code is exactly same, when they are deployed on the blockchain, the metadata would be different because of a wide variety of factors, which results in the difference of swarm code part between these two smart contracts. Like the end of creation code, swarm code part always starts with *0xa165627a7a72305820*, which is able to be decoded to "bzzr", and ends with *0x0029*, means the hash part's length is 41 bytes long. According to these two mark, we are capable of identifying the swarm part quickly and correctly.
 
@@ -48,7 +47,7 @@ Our goal is to calculate similarity between any two contracts from Ethereum, due
 
 For now, the contract’s number is around 100 thousand, smaller than the previous far away. However, calculate any two contracts’ similarity using editing distance is still a tough problem because of the following two reasons: just a bit’s difference will lead to a entirely different result if we use traditional hash method; if we use editing distance as usual, the time and memory consumed are intolerable. Therefore, I use *CTPH*, Context Triggered Piecewise Hash, an algorithm which is originally used as a spam email detector. CTPH combines traditional hash, like MD5 or FNV, to generate piecewise hash and rolling hash that can produce hash where the input is hashed in a window that moves through the input. There is an instance using rolling hash to detect repackaged smartphone applications by Wu Zhou et al. which indicates the rolling hash’s reliability. In this way, CTPH is able to compress contract’s code and generate a fingerprint referring to a specific contract as we show in fig 3.
 
-![it is the CTPH result of helloworld.sol](fig3.png)
+![The CTPH result of helloworld.sol.](fig3.png "CTPH Result")
 
 The fingerprint is divided into 3 parts by colon as: window block size $b$, hash result with block size $b$ and result with block size $2b$. The reason of displaying window size is that only signatures with an identical block size can be compared. However, the window block size varies among all these contracts, which means the compress procession is meaningless because we cannot compare arbitrary two contracts with different window block size. To deal with it, CTPH triggers two hash results from block size $b$ and $2b$. For example, there are two contracts, the first with a block size $b_x$ and the second with a block size $b_y$, the first one generate signature with $b_x$ and $2b_x$ and the second one with $b_y$ and $2b_y$. $b_x = b_y$, $b_x = 2b_y$, $2b_x = b_y$, any of these three condition is met, these two contracts could be compared. In this manner, even two contracts are similar but are significantly different in length, leading to a different window block size, are possible to be compared and generate score by weighted edit distance, a special edit distance raised by  performing well especially in this area. Based on the similarity score as the extent of how are they similar to each other, we could cluster all these distinct smart contracts.
 
@@ -58,7 +57,7 @@ Our scanner is based on Mythril, which uses symbolic analysis, an open-source se
 
 Our scan step could be divided into following steps, as shown in fig 4:
 
-![](fig4.png)
+![Disassemble bytecode, divide it by JUMP operations, construct CFG(Control Flow Graph), localize root node and traverse CFG to construct constrains.](fig4.png "Scan Step")
 
 1. Because all smart contracts we collected have bytecode and only part of them have source code. Thus we use Mythril’s decompiler to translate bytecode, only runtime code part, into assembly language, created by Solidity’s team. 
 
