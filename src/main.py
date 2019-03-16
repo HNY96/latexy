@@ -35,6 +35,7 @@ def parseArgs():
 
 def repalceImage(content):
 	# return img mark used in latex source
+	# if the image's width is 140mm or 190mm, the mark should be figure*
 	def func(myobejct):
 		pattern = r"""
 \begin{figure}
@@ -89,7 +90,8 @@ def translate(content, config_dict):
 	content = repalceImage(content)
 
 	# some other change because of bug of Ulysses
-	content = content.replace('’', '\'')
+	# solved! Close Ulysses's smart substitution 
+	# content = content.replace('’', '\'')
 
 	return content
 
